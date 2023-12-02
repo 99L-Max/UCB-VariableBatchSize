@@ -12,12 +12,12 @@ namespace VariableBatchSize
         private int countProcessedPoints = -1;
         private int countPoints;
 
+        public readonly int MaxCountThreads;
+
         public Simulation(int maxCountThreads)
         {
             MaxCountThreads = maxCountThreads;
         }
-
-        public int MaxCountThreads { private set; get; }
 
         private void StartNextThread()
         {
@@ -41,9 +41,12 @@ namespace VariableBatchSize
             for (int i = 0; i < bandits.Length; i++)
             {
                 bandits[i] = new BatchProcessing(arms, horizon, batchSize, a);
+
                 bandits[i].PointProcessed += UpdateProgress;
                 bandits[i].Finished += StartNextThread;
+
                 threads[i] = new Thread(bandits[i].RunSimulation);
+
                 a = Math.Round(a + da, 2);
             }
 
@@ -57,19 +60,19 @@ namespace VariableBatchSize
             UpdateProgress();
 
             foreach (var th in threads)
-               th.Join();
+                th.Join();
         }
 
         public void Save(string path)
         {
             string time = $"{DateTime.Now:d}_{DateTime.Now.Hour:d2}.{DateTime.Now.Minute:d2}.{DateTime.Now.Second:d2}";
 
-            using StreamWriter writer = new(@$"{path}\result_({time}).txt");
+            using StreamWriter writer = new(@$"{path}\d_is_{BatchProcessing.PossibleDevition}({time}).txt");
 
             writer.Write("d");
 
             foreach (var b in bandits)
-                writer.Write(" " + b.BatchSize);
+                writer.Write(" " + b.Parameter);
 
             writer.WriteLine();
 

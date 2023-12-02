@@ -78,11 +78,11 @@ namespace VariableBatchSize
                 deviation[i] = Math.Round(deviation[i - 1] + dd, 1);
         }
 
-        private bool CheckAbsDeviation(ref int index)
+        private bool CheckDeviation(ref int index)
         {
-            var arr = arms.OrderBy(a => a.AvgIncome).Take(2).ToArray();
+            Arm[] arr = arms.OrderByDescending(a => a.AvgIncome).ToArray();
             index = arr[0].Index;
-            return Math.Abs(arr[0].AvgIncome - arr[1].AvgIncome) > PossibleDevition;
+            return arr[0].AvgIncome - arr[1].AvgIncome > PossibleDevition;
         }
 
         private void UCB(ref int indexBestArm)
@@ -134,7 +134,7 @@ namespace VariableBatchSize
 
                     while (horizon > 0)
                     {
-                        if (CheckAbsDeviation(ref indexBestArm))
+                        if (CheckDeviation(ref indexBestArm))
                             BatchSize <<= 1;
                         else
                             UCB(ref indexBestArm);
