@@ -67,7 +67,7 @@ namespace VariableBatchSize
         {
             string time = $"{DateTime.Now:d}_{DateTime.Now.Hour:d2}.{DateTime.Now.Minute:d2}.{DateTime.Now.Second:d2}";
 
-            using StreamWriter writer = new(@$"{path}\d_is_{BatchProcessing.PossibleDevition}({time}).txt");
+            using StreamWriter writer = new(@$"{path}\d_is_{BatchProcessing.PossibleDevition:f1}_({time}).txt");
 
             writer.Write("d");
 

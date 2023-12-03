@@ -6,26 +6,26 @@ namespace VariableBatchSize
     {
         private readonly Random random = new();
 
-        public readonly int Index;
         public readonly double Expectation;
         public readonly double Dispersion;
+        public readonly double Parameter;
 
-        public Arm(int index, double expectation, double dispersion)
+        public Arm(double expectation, double dispersion, double parameter)
         {
-            Index = index;
             Expectation = expectation;
             Dispersion = dispersion;
+            Parameter = parameter;
         }
 
         public int Counter { private set; get; }
         public double Income { private set; get; }
-        public double AvgIncome { private set; get; }
+        public double UCB { private set; get; }
 
         public void Reset()
         {
             Counter = 0;
             Income = 0;
-            AvgIncome = 0;
+            UCB = 0;
         }
 
         public void Select(int data, ref int sumData, ref int horizon)
@@ -39,8 +39,11 @@ namespace VariableBatchSize
             while (data-- > 0)
                 if (random.NextDouble() < Expectation)
                     Income++;
+        }
 
-            AvgIncome = Income / Counter;
+        public void FindUCB(int n)
+        {
+            UCB = Income / Counter + Parameter * Math.Sqrt(Dispersion * Math.Log(n) / Counter);
         }
     }
 }

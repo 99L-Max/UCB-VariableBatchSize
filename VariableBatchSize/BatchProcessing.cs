@@ -6,10 +6,8 @@ namespace VariableBatchSize
     class BatchProcessing
     {
         private readonly Arm[] arms;
-        private readonly double[] ucb;
         private readonly double sqrtDivDN, sqrtMulDN;
 
-        private int sumCountData;
         private double[] regrets;
 
         private static double mathExp;
@@ -32,7 +30,6 @@ namespace VariableBatchSize
                 throw new ArgumentException("Incorrect parameters");
 
             this.arms = new Arm[arms];
-            ucb = new double[arms];
 
             Horizon = horizon;
             BatchSize = batchSize;
@@ -70,43 +67,16 @@ namespace VariableBatchSize
 
         public static void SetDeviationBorders(double d0, double dd, int count)
         {
-            deviation = new double[count];
-            DeltaDevition = dd;
-            deviation[0] = d0;
-
-            for (int i = 1; i < count; i++)
-                deviation[i] = Math.Round(deviation[i - 1] + dd, 1);
-        }
-
-        private bool CheckDeviation(ref int index)
-        {
-            Arm[] arr = arms.OrderByDescending(a => a.AvgIncome).ToArray();
-            index = arr[0].Index;
-            return arr[0].AvgIncome - arr[1].AvgIncome > PossibleDevition;
-        }
-
-        private void UCB(ref int indexBestArm)
-        {
-            double maxUCB = double.MinValue;
-
-            for (int i = 0; i < arms.Length; i++)
-            {
-                ucb[i] = arms[i].AvgIncome + Parameter * Math.Sqrt(MaxDispersion * Math.Log(sumCountData) / arms[i].Counter);
-
-                if (maxUCB < ucb[i])
-                {
-                    maxUCB = ucb[i];
-                    indexBestArm = i;
-                }
-            }
+            deviation = Enumerable.Range(0, count).Select(i => Math.Round(d0 + i * dd, 1)).ToArray();
         }
 
         public void RunSimulation()
         {
             regrets = new double[deviation.Length];
+            Arm[] sortArms;
             double maxIncome;
-            int horizon;
-            int indexBestArm = 0;
+            double normDevition = 2d * PossibleDevition * sqrtDivDN;
+            int horizon, sumCountData, batchSize;
 
             for (int mainIndex = 0; mainIndex < deviation.Length; mainIndex++)
             {
@@ -117,7 +87,7 @@ namespace VariableBatchSize
                 }
 
                 for (int i = 0; i < arms.Length; i++)
-                    arms[i] = new Arm(i, MathExp + (i == 0 ? deviation[mainIndex] : -deviation[mainIndex]) * sqrtDivDN, MaxDeviation);
+                    arms[i] = new Arm(MathExp + (i == 0 ? 1 : -1) * deviation[mainIndex] * sqrtDivDN, MaxDeviation, Parameter);
 
                 maxIncome = arms.Select(a => a.Expectation).Max() * Horizon;
 
@@ -125,21 +95,25 @@ namespace VariableBatchSize
                 {
                     sumCountData = 0;
                     horizon = Horizon;
+                    batchSize = BatchSize;
 
                     foreach (var arm in arms)
                     {
                         arm.Reset();
-                        arm.Select(BatchSize, ref sumCountData, ref horizon);
+                        arm.Select(batchSize, ref sumCountData, ref horizon);
                     }
 
                     while (horizon > 0)
                     {
-                        if (CheckDeviation(ref indexBestArm))
-                            BatchSize <<= 1;
-                        else
-                            UCB(ref indexBestArm);
+                        foreach (var a in arms)
+                            a.FindUCB(sumCountData);
 
-                        arms[indexBestArm].Select(BatchSize, ref sumCountData, ref horizon);
+                        sortArms = arms.OrderByDescending(a => a.UCB).ToArray();
+
+                        if (sortArms[0].UCB - sortArms[1].UCB > normDevition)
+                            batchSize <<= 1;
+
+                        sortArms[0].Select(batchSize, ref sumCountData, ref horizon);
                     }
 
                     regrets[mainIndex] += maxIncome - arms.Select(a => a.Income).Sum();
