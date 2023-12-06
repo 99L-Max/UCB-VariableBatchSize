@@ -80,8 +80,8 @@ namespace VariableBatchSize
             {
                 writer.Write(BatchProcessing.GetDeviation(d));
 
-                for (int i = 0; i < bandits.Length; i++)
-                    writer.Write(" " + bandits[i].GetRegrets(d));
+                foreach (var b in bandits)
+                    writer.Write(" " + b.GetRegrets(d));
 
                 writer.WriteLine();
             }

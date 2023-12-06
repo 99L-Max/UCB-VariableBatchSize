@@ -41,9 +41,9 @@ namespace VariableBatchSize
 
         public int BatchSize { private set; get; }
 
-        public double MaxDeviation { protected set; get; }
+        public double MaxDeviation { private set; get; }
 
-        public double MaxRegrets { protected set; get; } = 0d;
+        public double MaxRegrets { private set; get; } = 0d;
 
         public static int NumberDeviations => deviation.Length;
 
@@ -65,17 +65,20 @@ namespace VariableBatchSize
 
         public static double GetDeviation(int i) => deviation[i];
 
-        public static void SetDeviationBorders(double d0, double dd, int count)
+        public static void SetDeviation(double dev0, double step, int count)
         {
-            deviation = Enumerable.Range(0, count).Select(i => Math.Round(d0 + i * dd, 1)).ToArray();
+            deviation = Enumerable.Range(0, count).Select(i => Math.Round(dev0 + i * step, 1)).ToArray();
         }
 
         public void RunSimulation()
         {
             regrets = new double[deviation.Length];
+
             Arm[] sortArms;
+
             double maxIncome;
             double normDevition = 2d * PossibleDevition * sqrtDivDN;
+
             int horizon, sumCountData, batchSize;
 
             for (int mainIndex = 0; mainIndex < deviation.Length; mainIndex++)
@@ -87,7 +90,7 @@ namespace VariableBatchSize
                 }
 
                 for (int i = 0; i < arms.Length; i++)
-                    arms[i] = new Arm(MathExp + (i == 0 ? 1 : -1) * deviation[mainIndex] * sqrtDivDN, MaxDeviation, Parameter);
+                    arms[i] = new Arm(MathExp + (i == 0 ? 1 : -1) * deviation[mainIndex] * sqrtDivDN, MaxDispersion);
 
                 maxIncome = arms.Select(a => a.Expectation).Max() * Horizon;
 
@@ -105,8 +108,8 @@ namespace VariableBatchSize
 
                     while (horizon > 0)
                     {
-                        foreach (var a in arms)
-                            a.FindUCB(sumCountData);
+                        foreach (var arm in arms)
+                            arm.SetUCB(sumCountData, Parameter);
 
                         sortArms = arms.OrderByDescending(a => a.UCB).ToArray();
 

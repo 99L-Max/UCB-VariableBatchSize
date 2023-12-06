@@ -8,13 +8,11 @@ namespace VariableBatchSize
 
         public readonly double Expectation;
         public readonly double Dispersion;
-        public readonly double Parameter;
 
-        public Arm(double expectation, double dispersion, double parameter)
+        public Arm(double expectation, double dispersion)
         {
             Expectation = expectation;
             Dispersion = dispersion;
-            Parameter = parameter;
         }
 
         public int Counter { private set; get; }
@@ -41,9 +39,9 @@ namespace VariableBatchSize
                     Income++;
         }
 
-        public void FindUCB(int n)
+        public void SetUCB(int n, double a)
         {
-            UCB = Income / Counter + Parameter * Math.Sqrt(Dispersion * Math.Log(n) / Counter);
+            UCB = Income / Counter + a * Math.Sqrt(Dispersion * Math.Log(n) / Counter);
         }
     }
 }
