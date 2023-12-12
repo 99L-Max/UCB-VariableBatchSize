@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace VariableBatchSize
 {
-    class BatchProcessing
+    class Bandit
     {
         private readonly Arm[] arms;
         private readonly double sqrtDivDN, sqrtMulDN;
@@ -15,16 +15,16 @@ namespace VariableBatchSize
 
         public readonly int Horizon;
         public readonly double Parameter;
+        public readonly double PossibleDevition;
 
         public static int NumberSimulations;
         public static double MaxDispersion;
-        public static double PossibleDevition;
 
         public delegate void EventUpdateData();
         public event EventUpdateData PointProcessed;
         public event EventUpdateData Finished;
 
-        public BatchProcessing(int arms, int horizon, int batchSize, double parameter)
+        public Bandit(int arms, int horizon, int batchSize, double parameter, double possibleDevition)
         {
             if (arms * batchSize > horizon)
                 throw new ArgumentException("Incorrect parameters");
@@ -34,6 +34,7 @@ namespace VariableBatchSize
             Horizon = horizon;
             BatchSize = batchSize;
             Parameter = parameter;
+            PossibleDevition = possibleDevition;
 
             sqrtDivDN = Math.Sqrt(MaxDispersion / horizon);
             sqrtMulDN = Math.Sqrt(MaxDispersion * horizon);

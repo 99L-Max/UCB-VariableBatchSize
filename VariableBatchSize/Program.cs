@@ -1,17 +1,29 @@
-﻿namespace VariableBatchSize
+﻿using System;
+using System.Linq;
+
+namespace VariableBatchSize
 {
     class Program
     {
         static void Main(string[] args)
         {
-            BatchProcessing.MathExp = 0.5;
-            BatchProcessing.MaxDispersion = 0.25d;
-            BatchProcessing.NumberSimulations = 100000;
-            BatchProcessing.SetDeviation(1.5, 0.3, 5);
-            BatchProcessing.PossibleDevition = 10.5;
+            Bandit.MathExp = 0.5d;
+            Bandit.MaxDispersion = 0.25d;
+            Bandit.NumberSimulations = 100000;
+            Bandit.SetDeviation(1.5d, 0.3d, 5);
+
+            double a0 = 0.65d;
+            double da = 0.01d;
+            int count = 30;
+
+            int[] arms = Enumerable.Repeat(2, count).ToArray();
+            int[] horizon = Enumerable.Repeat(5000, count).ToArray();
+            int[] batchSize = Enumerable.Repeat(10, count).ToArray();
+            double[] a = Enumerable.Range(0, count).Select(i => Math.Round(a0 + i * da, 2)).ToArray();
+            double[] possDev = Enumerable.Repeat(1.8d, count).ToArray();
 
             Simulation simulation = new Simulation(6);
-            simulation.Run(2, 5000, 10, 0.35, 0.01, 30);
+            simulation.Run(arms, horizon, batchSize, a, possDev);
             simulation.Save(@"E:\НовГУ\2) Магистратура\1 курс\Научная деятельность\Результаты\10) Переменный размер пакета");
         }
     }

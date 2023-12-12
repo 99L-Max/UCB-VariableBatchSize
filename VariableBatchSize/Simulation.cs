@@ -7,7 +7,7 @@ namespace VariableBatchSize
     class Simulation
     {
         private Thread[] threads;
-        private BatchProcessing[] bandits;
+        private Bandit[] bandits;
         private int indexBandit = -1;
         private int countProcessedPoints = -1;
         private int countPoints;
@@ -33,24 +33,34 @@ namespace VariableBatchSize
             Console.Write($"\rВыполнено {countProcessedPoints} / {countPoints} ({countProcessedPoints * 100 / countPoints}%)");
         }
 
-        public void Run(int arms, int horizon, int batchSize, double a, double da, int count)
+        private bool CheckArraysLength(params Array[] arrays)
         {
-            bandits = new BatchProcessing[count];
-            threads = new Thread[count];
+            for (int i = 1; i < arrays.Length; i++)
+                if (arrays[0].Length != arrays[i].Length)
+                    return false;
+
+            return true;
+        }
+
+        public void Run(int[] arms, int[] horizon, int[] batchSize, double[] a, double[] possDev)
+        {
+            if (!CheckArraysLength(arms, horizon, batchSize, a, possDev))
+                throw new ArgumentException("The size of the arrays does not match.");
+
+            bandits = new Bandit[arms.Length];
+            threads = new Thread[arms.Length];
 
             for (int i = 0; i < bandits.Length; i++)
             {
-                bandits[i] = new BatchProcessing(arms, horizon, batchSize, a);
+                bandits[i] = new Bandit(arms[i], horizon[i], batchSize[i], a[i], possDev[i]);
 
                 bandits[i].PointProcessed += UpdateProgress;
                 bandits[i].Finished += StartNextThread;
 
                 threads[i] = new Thread(bandits[i].RunSimulation);
-
-                a = Math.Round(a + da, 2);
             }
 
-            countPoints = bandits.Length * BatchProcessing.NumberDeviations;
+            countPoints = bandits.Length * Bandit.NumberDeviations;
 
             int countThreads = Math.Min(MaxCountThreads, bandits.Length);
 
@@ -67,7 +77,7 @@ namespace VariableBatchSize
         {
             string time = $"{DateTime.Now:d}_{DateTime.Now.Hour:d2}.{DateTime.Now.Minute:d2}.{DateTime.Now.Second:d2}";
 
-            using StreamWriter writer = new(@$"{path}\d_is_{BatchProcessing.PossibleDevition:f1}_({time}).txt");
+            using StreamWriter writer = new(@$"{path}\result_({time}).txt");
 
             writer.Write("d");
 
@@ -76,9 +86,9 @@ namespace VariableBatchSize
 
             writer.WriteLine();
 
-            for (int d = 0; d < BatchProcessing.NumberDeviations; d++)
+            for (int d = 0; d < Bandit.NumberDeviations; d++)
             {
-                writer.Write(BatchProcessing.GetDeviation(d));
+                writer.Write(Bandit.GetDeviation(d));
 
                 foreach (var b in bandits)
                     writer.Write(" " + b.GetRegrets(d));
